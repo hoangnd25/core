@@ -1,11 +1,5 @@
-imports:
-    - { resource: security.yml }
-
 framework:
     secret:                           'dunglas.fr'
-    router:
-        resource:                     '%kernel.root_dir%/config/routing.yml'
-        strict_requirements:          '%kernel.debug%'
     validation:
         enable_annotations:            true
     serializer:
@@ -17,11 +11,15 @@ framework:
     templating:
         engines:                       ['twig'] # For Swagger UI
 
+parameters:
+    container.autowiring.strict_mode: true
+    container.dumper.inline_class_loader: true
+
 doctrine:
     dbal:
-        driver:                        'pdo_sqlite'
-        path:                          '%kernel.cache_dir%/db.sqlite'
-        charset:                       'UTF8'
+        driver:   'pdo_sqlite'
+        path:     '%kernel.cache_dir%/db.sqlite'
+        charset:  'UTF8'
 
     orm:
         auto_generate_proxy_classes:   '%kernel.debug%'
@@ -40,12 +38,19 @@ doctrine_mongodb:
 api_platform:
     title:                             'My Dummy API'
     description:                       'This is a test API.'
+    allow_plain_identifiers:           true
     formats:
         jsonld:                        ['application/ld+json']
         jsonhal:                       ['application/hal+json']
+        jsonapi:                       ['application/vnd.api+json']
         xml:                           ['application/xml', 'text/xml']
         json:                          ['application/json']
         html:                          ['text/html']
+    error_formats:
+        jsonproblem:                   ['application/problem+json']
+        jsonld:                        ['application/ld+json']
+        jsonapi:                       ['application/vnd.api+json']
+    graphql:                           true
     name_converter:                    'app.name_converter'
     enable_fos_user:                   true
     collection:
@@ -54,11 +59,13 @@ api_platform:
         pagination:
             client_enabled:            true
             client_items_per_page:     true
+            client_partial:            true
             items_per_page:            3
-    enable_nelmio_api_doc: true
     exception_to_status:
         Symfony\Component\Serializer\Exception\ExceptionInterface: 400
-        ApiPlatform\Core\Exception\InvalidArgumentException: !php/const:Symfony\Component\HttpFoundation\Response::HTTP_BAD_REQUEST
+        ApiPlatform\Core\Exception\InvalidArgumentException: 400
+        # Use this syntax with Symfony YAML 3.4+:
+        #ApiPlatform\Core\Exception\InvalidArgumentException: !php/const Symfony\Component\HttpFoundation\Response::HTTP_BAD_REQUEST
     http_cache:
         invalidation:
             enabled: true
@@ -66,9 +73,6 @@ api_platform:
         shared_max_age: 3600
         vary:           ['Accept', 'Cookie']
         public:         true
-    doctrine:
-        enable_mongodb_odm: true
-        enable_orm: false
 
 fos_user:
     db_driver:        'mongodb'
@@ -80,22 +84,24 @@ fos_user:
         address:      'no-reply@les-tilleuls.coop'
         sender_name:  'Kévin Dunglas'
 
-nelmio_api_doc:
-    sandbox:
-        accept_type:        'application/json'
-        body_format:
-            formats:        [ 'json' ]
-            default_format: 'json'
-        request_format:
-            formats:
-                json:       'application/json'
-
 services:
     contain_non_resource.item_data_provider:
         class: 'ApiPlatform\Core\Tests\Fixtures\TestBundle\DataProvider\ContainNonResourceItemDataProvider'
         public: false
         tags:
             -  { name: 'api_platform.item_data_provider' }
+
+    serializable.item_data_provider:
+        class: 'ApiPlatform\Core\Tests\Fixtures\TestBundle\DataProvider\SerializableItemDataProvider'
+        public: false
+        tags:
+            -  { name: 'api_platform.item_data_provider' }
+
+    app.serializer.denormalizer.serializable_resource:
+        class: 'ApiPlatform\Core\Tests\Fixtures\TestBundle\Serializer\Denormalizer\SerializableResourceDenormalizer'
+        public: false
+        tags:
+            -  { name: 'serializer.normalizer' }
 
     app.user_manager:
         class: 'ApiPlatform\Core\Tests\Fixtures\TestBundle\Manager\UserManager'
@@ -179,3 +185,15 @@ services:
 
     api_platform.http_cache.purger:
         class: ApiPlatform\Core\Tests\Fixtures\NullPurger
+
+    test.api_platform.http_cache.purger:
+        alias: api_platform.http_cache.purger
+        public: true
+
+    test.property_accessor:
+        alias: property_accessor
+        public: true
+
+    test.annotation_reader:
+        alias: annotation_reader
+        public: true
