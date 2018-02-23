@@ -73,7 +73,10 @@ api_platform:
         shared_max_age: 3600
         vary:           ['Accept', 'Cookie']
         public:         true
-
+    doctrine: 
+        enable_mongodb_odm:            true
+        enable_orm:                    false
+        
 fos_user:
     db_driver:        'mongodb'
     firewall_name:    'api'
