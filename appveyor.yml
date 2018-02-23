@@ -6,12 +6,15 @@ cache:
   - '%LOCALAPPDATA%\Composer\files'
 
 init:
-  - SET PATH=c:\tools\php71;%PATH%
+  - SET PATH=c:\tools\php72;%PATH%
+
+environment:
+    APP_ENV: 'test'
 
 install:
   - ps: Set-Service wuauserv -StartupType Manual
   - cinst -y php
-  - cd c:\tools\php71
+  - cd c:\tools\php72
   - cd ext
   - appveyor DownloadFile http://windows.php.net/downloads/pecl/releases/mongodb/1.1.8/php_mongodb-1.1.8-7.0-nts-vc14-x64.zip
   - 7z x php_mongodb-1.1.8-7.0-nts-vc14-x64.zip -y >nul
@@ -34,5 +37,5 @@ services:
 
 test_script:
   - cd %APPVEYOR_BUILD_FOLDER%
-  - php vendor\behat\behat\bin\behat
+  - php vendor\behat\behat\bin\behat --format=progress --tags='~@postgres'
   - php vendor\phpunit\phpunit\phpunit

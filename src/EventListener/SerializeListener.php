@@ -58,14 +58,21 @@ final class SerializeListener
             return;
         }
 
-        $context = $this->serializerContextBuilder->createFromRequest($request, true, $attributes);
-        $resources = [];
+        if (null === $context = $request->attributes->get('_api_normalization_context')) {
+            $context = $this->serializerContextBuilder->createFromRequest($request, true, $attributes);
+        }
+
+        $resources = new class() extends \ArrayObject {
+            public function serialize()
+            {
+            }
+        };
         $context['resources'] = &$resources;
 
         $event->setControllerResult($this->serializer->serialize($controllerResult, $request->getRequestFormat(), $context));
 
         $request->attributes->set('_api_respond', true);
-        $request->attributes->set('_resources', $request->attributes->get('_resources', []) + $resources);
+        $request->attributes->set('_resources', $request->attributes->get('_resources', []) + (array) $resources);
     }
 
     /**
@@ -83,8 +90,8 @@ final class SerializeListener
             return;
         }
 
-        if (is_object($controllerResult)) {
-            $event->setControllerResult($this->serializer->serialize($controllerResult, $request->getRequestFormat()));
+        if (\is_object($controllerResult)) {
+            $event->setControllerResult($this->serializer->serialize($controllerResult, $request->getRequestFormat(), $request->attributes->get('_api_normalization_context', [])));
 
             return;
         }

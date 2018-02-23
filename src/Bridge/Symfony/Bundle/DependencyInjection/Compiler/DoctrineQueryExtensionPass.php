@@ -14,8 +14,8 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\Bridge\Symfony\Bundle\DependencyInjection\Compiler;
 
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
+use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Reference;
 
 /**
  * Injects query extensions.
@@ -27,6 +27,8 @@ use Symfony\Component\DependencyInjection\Reference;
  */
 final class DoctrineQueryExtensionPass implements CompilerPassInterface
 {
+    use PriorityTaggedServiceTrait;
+
     /**
      * {@inheritdoc}
      */
@@ -36,7 +38,7 @@ final class DoctrineQueryExtensionPass implements CompilerPassInterface
         if (!$container->hasDefinition('api_platform.doctrine.metadata_factory')) {
             return;
         }
-
+        
         if ($container->hasDefinition('api_platform.doctrine.orm.collection_data_provider')) {
             $this->handleOrm($container);
         } elseif ($container->hasDefinition('api_platform.doctrine.mongodb.collection_data_provider')) {
@@ -71,11 +73,10 @@ final class DoctrineQueryExtensionPass implements CompilerPassInterface
     {
         $collectionDataProviderDefinition = $container->getDefinition('api_platform.doctrine.orm.collection_data_provider');
         $itemDataProviderDefinition = $container->getDefinition('api_platform.doctrine.orm.item_data_provider');
-
         $subresourceDataProviderDefinition = $container->getDefinition('api_platform.doctrine.orm.subresource_data_provider');
 
-        $collectionExtensions = $this->findSortedServices($container, 'api_platform.doctrine.orm.query_extension.collection');
-        $itemExtensions = $this->findSortedServices($container, 'api_platform.doctrine.orm.query_extension.item');
+        $collectionExtensions = $this->findAndSortTaggedServices('api_platform.doctrine.orm.query_extension.collection', $container);
+        $itemExtensions = $this->findAndSortTaggedServices('api_platform.doctrine.orm.query_extension.item', $container);
 
         $collectionDataProviderDefinition->replaceArgument(1, $collectionExtensions);
         $itemDataProviderDefinition->replaceArgument(3, $itemExtensions);

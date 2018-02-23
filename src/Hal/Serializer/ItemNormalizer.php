@@ -50,7 +50,7 @@ final class ItemNormalizer extends AbstractItemNormalizer
         $context['api_normalize'] = true;
 
         $rawData = parent::normalize($object, $format, $context);
-        if (!is_array($rawData)) {
+        if (!\is_array($rawData)) {
             return $rawData;
         }
 
@@ -83,7 +83,7 @@ final class ItemNormalizer extends AbstractItemNormalizer
     /**
      * {@inheritdoc}
      */
-    protected function getAttributes($object, $format, array $context)
+    protected function getAttributes($object, $format = null, array $context)
     {
         return $this->getComponents($object, $format, $context)['states'];
     }

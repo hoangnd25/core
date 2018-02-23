@@ -35,12 +35,13 @@ use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Query\Expr;
 use Doctrine\ORM\Query\Expr\Func;
 use Doctrine\ORM\QueryBuilder;
+use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
 
 /**
  * @author Kévin Dunglas <dunglas@gmail.com>
  */
-class SubresourceDataProviderTest extends \PHPUnit_Framework_TestCase
+class SubresourceDataProviderTest extends TestCase
 {
     private function assertIdentifierManagerMethodCalls($managerProphecy)
     {
@@ -128,11 +129,7 @@ class SubresourceDataProviderTest extends \PHPUnit_Framework_TestCase
         $funcProphecy = $this->prophesize(Func::class);
         $func = $funcProphecy->reveal();
 
-        $exprProphecy = $this->prophesize(Expr::class);
-        $exprProphecy->in('o', $dql)->willReturn($func)->shouldBeCalled();
-
-        $queryBuilder->expr()->shouldBeCalled()->willReturn($exprProphecy->reveal());
-        $queryBuilder->where($func)->shouldBeCalled()->willReturn($queryBuilder);
+        $queryBuilder->andWhere($func)->shouldBeCalled()->willReturn($queryBuilder);
 
         $queryBuilder->getQuery()->shouldBeCalled()->willReturn($queryProphecy->reveal());
 
@@ -157,6 +154,11 @@ class SubresourceDataProviderTest extends \PHPUnit_Framework_TestCase
         $qb->andWhere('id_a1.id = :id_p1')->shouldBeCalled()->willReturn($qb);
         $qb->getDQL()->shouldBeCalled()->willReturn($dql);
 
+        $exprProphecy = $this->prophesize(Expr::class);
+        $exprProphecy->in('o', $dql)->willReturn($func)->shouldBeCalled();
+
+        $qb->expr()->shouldBeCalled()->willReturn($exprProphecy->reveal());
+
         $managerProphecy->createQueryBuilder()->shouldBeCalled()->willReturn($qb->reveal());
 
         $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
@@ -176,6 +178,8 @@ class SubresourceDataProviderTest extends \PHPUnit_Framework_TestCase
     {
         $managerRegistryProphecy = $this->prophesize(ManagerRegistry::class);
         $identifiers = ['id'];
+        $funcProphecy = $this->prophesize(Func::class);
+        $func = $funcProphecy->reveal();
 
         // First manager (Dummy)
         $dummyDQL = 'SELECT relatedDummies_a3 FROM ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy id_a2 INNER JOIN id_a2.relatedDummies relatedDummies_a3 WHERE id_a2.id = :id_p2';
@@ -217,6 +221,11 @@ class SubresourceDataProviderTest extends \PHPUnit_Framework_TestCase
         $rqb->andWhere($dummyFunc)->shouldBeCalled()->willReturn($rqb);
         $rqb->getDQL()->shouldBeCalled()->willReturn($relatedDQL);
 
+        $relatedExpProphecy = $this->prophesize(Expr::class);
+        $relatedExpProphecy->in('o', $relatedDQL)->willReturn($func)->shouldBeCalled();
+
+        $rqb->expr()->shouldBeCalled()->willReturn($relatedExpProphecy->reveal());
+
         $rClassMetadataProphecy = $this->prophesize(ClassMetadata::class);
         $rClassMetadataProphecy->getIdentifier()->shouldBeCalled()->willReturn($identifiers);
         $rClassMetadataProphecy->getTypeOfField('id')->shouldBeCalled()->willReturn('integer');
@@ -236,14 +245,7 @@ class SubresourceDataProviderTest extends \PHPUnit_Framework_TestCase
 
         $queryBuilder = $this->prophesize(QueryBuilder::class);
 
-        $funcProphecy = $this->prophesize(Func::class);
-        $func = $funcProphecy->reveal();
-
-        $exprProphecy = $this->prophesize(Expr::class);
-        $exprProphecy->in('o', $relatedDQL)->willReturn($func)->shouldBeCalled();
-
-        $queryBuilder->expr()->shouldBeCalled()->willReturn($exprProphecy->reveal());
-        $queryBuilder->where($func)->shouldBeCalled()->willReturn($queryBuilder);
+        $queryBuilder->andWhere($func)->shouldBeCalled()->willReturn($queryBuilder);
 
         $queryBuilder->getQuery()->shouldBeCalled()->willReturn($queryProphecy->reveal());
         $queryBuilder->setParameter('id_p1', 1)->shouldBeCalled()->willReturn($queryBuilder);
@@ -276,11 +278,7 @@ class SubresourceDataProviderTest extends \PHPUnit_Framework_TestCase
         $funcProphecy = $this->prophesize(Func::class);
         $func = $funcProphecy->reveal();
 
-        $exprProphecy = $this->prophesize(Expr::class);
-        $exprProphecy->in('o', $dql)->willReturn($func)->shouldBeCalled();
-
-        $queryBuilder->expr()->shouldBeCalled()->willReturn($exprProphecy->reveal());
-        $queryBuilder->where($func)->shouldBeCalled()->willReturn($queryBuilder);
+        $queryBuilder->andWhere($func)->shouldBeCalled()->willReturn($queryBuilder);
 
         $repositoryProphecy = $this->prophesize(EntityRepository::class);
         $repositoryProphecy->createQueryBuilder('o')->shouldBeCalled()->willReturn($queryBuilder->reveal());
@@ -304,6 +302,11 @@ class SubresourceDataProviderTest extends \PHPUnit_Framework_TestCase
         $qb->andWhere('id_a1.id = :id_p1')->shouldBeCalled()->willReturn($qb);
         $qb->getDQL()->shouldBeCalled()->willReturn($dql);
 
+        $exprProphecy = $this->prophesize(Expr::class);
+        $exprProphecy->in('o', $dql)->willReturn($func)->shouldBeCalled();
+
+        $qb->expr()->shouldBeCalled()->willReturn($exprProphecy->reveal());
+
         $managerProphecy->createQueryBuilder()->shouldBeCalled()->willReturn($qb->reveal());
         $this->assertIdentifierManagerMethodCalls($managerProphecy);
 
@@ -314,9 +317,9 @@ class SubresourceDataProviderTest extends \PHPUnit_Framework_TestCase
         list($propertyNameCollectionFactory, $propertyMetadataFactory) = $this->getMetadataProphecies([Dummy::class => $identifiers]);
 
         $extensionProphecy = $this->prophesize(QueryResultCollectionExtensionInterface::class);
-        $extensionProphecy->applyToCollection($queryBuilder, Argument::type(QueryNameGeneratorInterface::class), RelatedDummy::class, null)->shouldBeCalled();
-        $extensionProphecy->supportsResult(RelatedDummy::class, null)->willReturn(true)->shouldBeCalled();
-        $extensionProphecy->getResult($queryBuilder)->willReturn([])->shouldBeCalled();
+        $extensionProphecy->applyToCollection($queryBuilder, Argument::type(QueryNameGeneratorInterface::class), RelatedDummy::class, null, Argument::type('array'))->shouldBeCalled();
+        $extensionProphecy->supportsResult(RelatedDummy::class, null, Argument::type('array'))->willReturn(true)->shouldBeCalled();
+        $extensionProphecy->getResult($queryBuilder, RelatedDummy::class, null, Argument::type('array'))->willReturn([])->shouldBeCalled();
 
         $dataProvider = new SubresourceDataProvider($managerRegistryProphecy->reveal(), $propertyNameCollectionFactory, $propertyMetadataFactory, [$extensionProphecy->reveal()]);
 

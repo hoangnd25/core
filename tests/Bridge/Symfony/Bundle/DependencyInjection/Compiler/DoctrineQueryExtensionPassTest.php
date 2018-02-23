@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace ApiPlatform\Core\Tests\Bridge\Symfony\Bundle\DependencyInjection\Compiler;
 
 use ApiPlatform\Core\Bridge\Symfony\Bundle\DependencyInjection\Compiler\DoctrineQueryExtensionPass;
+use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -22,7 +23,7 @@ use Symfony\Component\DependencyInjection\Definition;
 /**
  * @author Kévin Dunglas <dunglas@gmail.com>
  */
-class DoctrineQueryExtensionPassTest extends \PHPUnit_Framework_TestCase
+class DoctrineQueryExtensionPassTest extends TestCase
 {
     public function testProcess()
     {
@@ -45,8 +46,8 @@ class DoctrineQueryExtensionPassTest extends \PHPUnit_Framework_TestCase
 
         $containerBuilderProphecy = $this->prophesize(ContainerBuilder::class);
         $containerBuilderProphecy->hasDefinition('api_platform.doctrine.metadata_factory')->willReturn(true)->shouldBeCalled();
-        $containerBuilderProphecy->findTaggedServiceIds('api_platform.doctrine.orm.query_extension.collection')->willReturn(['foo' => [], 'bar' => ['priority' => 1]])->shouldBeCalled();
-        $containerBuilderProphecy->findTaggedServiceIds('api_platform.doctrine.orm.query_extension.item')->willReturn(['foo' => [], 'bar' => ['priority' => 1]])->shouldBeCalled();
+        $containerBuilderProphecy->findTaggedServiceIds('api_platform.doctrine.orm.query_extension.collection', true)->willReturn(['foo' => [], 'bar' => ['priority' => 1]])->shouldBeCalled();
+        $containerBuilderProphecy->findTaggedServiceIds('api_platform.doctrine.orm.query_extension.item', true)->willReturn(['foo' => [], 'bar' => ['priority' => 1]])->shouldBeCalled();
 
         $containerBuilderProphecy->getDefinition('api_platform.doctrine.orm.collection_data_provider')->willReturn($collectionDataProviderDefinition)->shouldBeCalled();
         $containerBuilderProphecy->getDefinition('api_platform.doctrine.orm.item_data_provider')->willReturn($itemDataProviderDefinition)->shouldBeCalled();

@@ -22,7 +22,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * Related To Dummy Friend represent an association table for a manytomany relation.
  *
- * @ApiResource(attributes={"normalization_context"={"groups": {"fakemanytomany"}}})
+ * @ApiResource(attributes={"normalization_context"={"groups": {"fakemanytomany"}}, "filters"={"related_to_dummy_friend.name"}})
  * @ORM\Entity
  */
 class RelatedToDummyFriend
@@ -42,6 +42,7 @@ class RelatedToDummyFriend
      * @ORM\ManyToOne(targetEntity="DummyFriend")
      * @ORM\JoinColumn(name="dummyfriend_id", referencedColumnName="id", nullable=false)
      * @Groups({"fakemanytomany", "friends"})
+     * @Assert\NotNull
      */
     private $dummyFriend;
 
@@ -49,6 +50,7 @@ class RelatedToDummyFriend
      * @ORM\Id
      * @ORM\ManyToOne(targetEntity="RelatedDummy", inversedBy="relatedToDummyFriend")
      * @ORM\JoinColumn(name="relateddummy_id", referencedColumnName="id", nullable=false, onDelete="CASCADE")
+     * @Assert\NotNull
      */
     private $relatedDummy;
 
@@ -75,9 +77,9 @@ class RelatedToDummyFriend
     /**
      * Sets dummyFriend.
      *
-     * @param $dummyFriend the value to set
+     * @param DummyFriend $dummyFriend the value to set
      */
-    public function setDummyFriend($dummyFriend)
+    public function setDummyFriend(DummyFriend $dummyFriend)
     {
         $this->dummyFriend = $dummyFriend;
     }
@@ -95,9 +97,9 @@ class RelatedToDummyFriend
     /**
      * Sets relatedDummy.
      *
-     * @param $relatedDummy the value to set
+     * @param RelatedDummy $relatedDummy the value to set
      */
-    public function setRelatedDummy($relatedDummy)
+    public function setRelatedDummy(RelatedDummy $relatedDummy)
     {
         $this->relatedDummy = $relatedDummy;
     }

@@ -34,7 +34,8 @@ use Symfony\Component\Validator\Constraints as Assert;
  *         "my_dummy.order",
  *         "my_dummy.range",
  *         "my_dummy.search",
- *     },
+ *         "my_dummy.property"
+ *     }
  * })
  * @ORM\Entity
  */
@@ -198,8 +199,14 @@ class Dummy
     {
     }
 
+    public function getFoo()
+    {
+        return $this->foo;
+    }
+
     public function setFoo(array $foo = null)
     {
+        $this->foo = $foo;
     }
 
     public function setDummyDate(\DateTime $dummyDate = null)
@@ -273,5 +280,10 @@ class Dummy
     public function getDummy()
     {
         return $this->dummy;
+    }
+
+    public function getRelatedDummies()
+    {
+        return $this->relatedDummies;
     }
 }

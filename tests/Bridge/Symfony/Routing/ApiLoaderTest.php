@@ -29,6 +29,7 @@ use ApiPlatform\Core\PathResolver\CustomOperationPathResolver;
 use ApiPlatform\Core\PathResolver\OperationPathResolver;
 use ApiPlatform\Core\Tests\Fixtures\DummyEntity;
 use ApiPlatform\Core\Tests\Fixtures\RelatedDummyEntity;
+use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
@@ -39,7 +40,7 @@ use Symfony\Component\Routing\Route;
  * @author Antoine Bluchet <soyuka@gmail.com>
  * @author Amrouche Hamza <hamza.simperfit@gmail.com>
  */
-class ApiLoaderTest extends \PHPUnit_Framework_TestCase
+class ApiLoaderTest extends TestCase
 {
     public function testApiLoader()
     {
@@ -47,21 +48,21 @@ class ApiLoaderTest extends \PHPUnit_Framework_TestCase
         $resourceMetadata = $resourceMetadata->withShortName('dummy');
         //default operation based on OperationResourceMetadataFactory
         $resourceMetadata = $resourceMetadata->withItemOperations([
-            'get' => ['method' => 'GET'],
+            'get' => ['method' => 'GET', 'requirements' => ['id' => '\d+'], 'defaults' => ['my_default' => 'default_value', '_controller' => 'should_not_be_overriden']],
             'put' => ['method' => 'PUT'],
             'delete' => ['method' => 'DELETE'],
         ]);
         //custom operations
         $resourceMetadata = $resourceMetadata->withCollectionOperations([
-            'my_op' => ['method' => 'GET', 'controller' => 'some.service.name'], //with controller
-            'my_second_op' => ['method' => 'POST'], //without controller, takes the default one
+            'my_op' => ['method' => 'GET', 'controller' => 'some.service.name', 'requirements' => ['_format' => 'a valid format'], 'defaults' => ['my_default' => 'default_value'], 'condition' => "request.headers.get('User-Agent') matches '/firefox/i'"], //with controller
+            'my_second_op' => ['method' => 'POST', 'options' => ['option' => 'option_value'], 'host' => '{subdomain}.api-platform.com', 'schemes' => ['https']], //without controller, takes the default one
             'my_path_op' => ['method' => 'GET', 'path' => 'some/custom/path'], //custom path
         ]);
 
         $routeCollection = $this->getApiLoaderWithResourceMetadata($resourceMetadata)->load(null);
 
         $this->assertEquals(
-            $this->getRoute('/dummies/{id}.{_format}', 'api_platform.action.get_item', DummyEntity::class, 'get', ['GET']),
+            $this->getRoute('/dummies/{id}.{_format}', 'api_platform.action.get_item', DummyEntity::class, 'get', ['GET'], false, ['id' => '\d+'], ['my_default' => 'default_value']),
             $routeCollection->get('api_dummies_get_item')
         );
 
@@ -76,12 +77,12 @@ class ApiLoaderTest extends \PHPUnit_Framework_TestCase
         );
 
         $this->assertEquals(
-            $this->getRoute('/dummies.{_format}', 'some.service.name', DummyEntity::class, 'my_op', ['GET'], true),
+            $this->getRoute('/dummies.{_format}', 'some.service.name', DummyEntity::class, 'my_op', ['GET'], true, ['_format' => 'a valid format'], ['my_default' => 'default_value'], [], '', [], "request.headers.get('User-Agent') matches '/firefox/i'"),
             $routeCollection->get('api_dummies_my_op_collection')
         );
 
         $this->assertEquals(
-            $this->getRoute('/dummies.{_format}', 'api_platform.action.post_collection', DummyEntity::class, 'my_second_op', ['POST'], true),
+            $this->getRoute('/dummies.{_format}', 'api_platform.action.post_collection', DummyEntity::class, 'my_second_op', ['POST'], true, [], [], ['option' => 'option_value'], '{subdomain}.api-platform.com', ['https']),
             $routeCollection->get('api_dummies_my_second_op_collection')
         );
 
@@ -256,12 +257,12 @@ class ApiLoaderTest extends \PHPUnit_Framework_TestCase
 
         $subresourceOperationFactory = new SubresourceOperationFactory($resourceMetadataFactory, $propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), new UnderscorePathSegmentNameGenerator());
 
-        $apiLoader = new ApiLoader($kernelProphecy->reveal(), $resourceNameCollectionFactoryProphecy->reveal(), $resourceMetadataFactory, $operationPathResolver, $containerProphecy->reveal(), ['jsonld' => ['application/ld+json']], [], $subresourceOperationFactory);
+        $apiLoader = new ApiLoader($kernelProphecy->reveal(), $resourceNameCollectionFactoryProphecy->reveal(), $resourceMetadataFactory, $operationPathResolver, $containerProphecy->reveal(), ['jsonld' => ['application/ld+json']], [], $subresourceOperationFactory, false, true, true);
 
         return $apiLoader;
     }
 
-    private function getRoute(string $path, string $controller, string $resourceClass, string $operationName, array $methods, bool $collection = false): Route
+    private function getRoute(string $path, string $controller, string $resourceClass, string $operationName, array $methods, bool $collection = false, array $requirements = [], array $extraDefaults = [], array $options = [], string $host = '', array $schemes = [], string $condition = ''): Route
     {
         return new Route(
             $path,
@@ -270,16 +271,17 @@ class ApiLoaderTest extends \PHPUnit_Framework_TestCase
                 '_format' => null,
                 '_api_resource_class' => $resourceClass,
                 sprintf('_api_%s_operation_name', $collection ? 'collection' : 'item') => $operationName,
-            ],
-            [],
-            [],
-            '',
-            [],
-            $methods
+            ] + $extraDefaults,
+            $requirements,
+            $options,
+            $host,
+            $schemes,
+            $methods,
+            $condition
         );
     }
 
-    private function getSubresourceRoute(string $path, string $controller, string $resourceClass, string $operationName, array $context): Route
+    private function getSubresourceRoute(string $path, string $controller, string $resourceClass, string $operationName, array $context, array $requirements = []): Route
     {
         return new Route(
             $path,
@@ -290,7 +292,7 @@ class ApiLoaderTest extends \PHPUnit_Framework_TestCase
                 '_api_subresource_operation_name' => $operationName,
                 '_api_subresource_context' => $context,
             ],
-            [],
+            $requirements,
             [],
             '',
             [],

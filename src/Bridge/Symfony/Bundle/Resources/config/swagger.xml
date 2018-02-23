@@ -22,7 +22,12 @@
             <argument>%api_platform.oauth.tokenUrl%</argument>
             <argument>%api_platform.oauth.authorizationUrl%</argument>
             <argument>%api_platform.oauth.scopes%</argument>
-            <argument type="service" id="api_platform.subresource_operation_factory"></argument>
+            <argument>%api_platform.swagger.api_keys%</argument>
+            <argument type="service" id="api_platform.subresource_operation_factory" />
+            <argument>%api_platform.collection.pagination.enabled%</argument>
+            <argument>%api_platform.collection.pagination.page_parameter_name%</argument>
+            <argument>%api_platform.collection.pagination.client_items_per_page%</argument>
+            <argument>%api_platform.collection.pagination.items_per_page_parameter_name%</argument>
             <tag name="serializer.normalizer" priority="16" />
         </service>
 
@@ -39,7 +44,7 @@
 
         <!-- Action -->
 
-        <service id="api_platform.swagger.action.ui" class="ApiPlatform\Core\Bridge\Symfony\Bundle\Action\SwaggerUiAction">
+        <service id="api_platform.swagger.action.ui" class="ApiPlatform\Core\Bridge\Symfony\Bundle\Action\SwaggerUiAction" public="true">
             <argument type="service" id="api_platform.metadata.resource.name_collection_factory" />
             <argument type="service" id="api_platform.metadata.resource.metadata_factory" />
             <argument type="service" id="api_platform.serializer" />

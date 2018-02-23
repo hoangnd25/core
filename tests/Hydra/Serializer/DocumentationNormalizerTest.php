@@ -26,13 +26,15 @@ use ApiPlatform\Core\Metadata\Property\SubresourceMetadata;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
 use ApiPlatform\Core\Metadata\Resource\ResourceNameCollection;
+use ApiPlatform\Core\Operation\Factory\SubresourceOperationFactoryInterface;
+use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
 use Symfony\Component\PropertyInfo\Type;
 
 /**
  * @author Amrouche Hamza <hamza.simperfit@gmail.com>
  */
-class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
+class DocumentationNormalizerTest extends TestCase
 {
     public function testNormalize()
     {
@@ -44,7 +46,7 @@ class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
         $propertyNameCollectionFactoryProphecy = $this->prophesize(PropertyNameCollectionFactoryInterface::class);
         $propertyNameCollectionFactoryProphecy->create('dummy', [])->shouldBeCalled()->willReturn(new PropertyNameCollection(['name', 'description', 'relatedDummy']));
 
-        $dummyMetadata = new ResourceMetadata('dummy', 'dummy', '#dummy', ['get' => ['method' => 'GET'], 'put' => ['method' => 'PUT']], ['get' => ['method' => 'GET'], 'post' => ['method' => 'POST']], []);
+        $dummyMetadata = new ResourceMetadata('dummy', 'dummy', '#dummy', ['get' => ['method' => 'GET', 'hydra_context' => ['hydra:foo' => 'bar', 'hydra:title' => 'foobar']], 'put' => ['method' => 'PUT']], ['get' => ['method' => 'GET'], 'post' => ['method' => 'POST']], []);
         $resourceMetadataFactoryProphecy = $this->prophesize(ResourceMetadataFactoryInterface::class);
         $resourceMetadataFactoryProphecy->create('dummy')->shouldBeCalled()->willReturn($dummyMetadata);
         $resourceMetadataFactoryProphecy->create('relatedDummy')->shouldBeCalled()->willReturn(new ResourceMetadata('relatedDummy'));
@@ -70,13 +72,29 @@ class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
 
         $urlGenerator->generate('api_doc', ['_format' => 'jsonld'], 0)->willReturn('/doc')->shouldBeCalled(1);
 
+        $subresourceOperationFactoryProphecy = $this->prophesize(SubresourceOperationFactoryInterface::class);
+        $subresourceOperationFactoryProphecy->create('dummy')->shouldBeCalled()->willReturn([
+            'api_dummies_subresource_get_related_dummy' => [
+                'property' => 'relatedDummy',
+                'collection' => false,
+                'resource_class' => 'relatedDummy',
+                'shortNames' => ['relatedDummy'],
+                'identifiers' => [
+                    ['id', 'dummy', true],
+                ],
+                'route_name' => 'api_dummies_subresource_get_related_dummy',
+                'path' => '/dummies/{id}/related_dummy.{_format}',
+            ],
+        ]);
+
         $apiDocumentationBuilder = new DocumentationNormalizer(
             $resourceMetadataFactoryProphecy->reveal(),
             $propertyNameCollectionFactoryProphecy->reveal(),
             $propertyMetadataFactoryProphecy->reveal(),
             $resourceClassResolverProphecy->reveal(),
             $operationMethodResolverProphecy->reveal(),
-            $urlGenerator->reveal());
+            $urlGenerator->reveal(),
+            $subresourceOperationFactoryProphecy->reveal());
 
         $expected = [
             '@context' => [
@@ -113,14 +131,14 @@ class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
             'hydra:title' => 'Test Api',
             'hydra:description' => 'test ApiGerard',
             'hydra:supportedClass' => [
-                0 => [
+                [
                     '@id' => '#dummy',
                     '@type' => 'hydra:Class',
                     'rdfs:label' => 'dummy',
                     'hydra:title' => 'dummy',
                     'hydra:description' => 'dummy',
                     'hydra:supportedProperty' => [
-                        0 => [
+                        [
                             '@type' => 'hydra:SupportedProperty',
                             'hydra:property' => [
                                 '@id' => '#dummy/name',
@@ -135,7 +153,7 @@ class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
                             'hydra:writable' => true,
                             'hydra:description' => 'name',
                         ],
-                        1 => [
+                        [
                             '@type' => 'hydra:SupportedProperty',
                             'hydra:property' => [
                                 '@id' => '#dummy/description',
@@ -150,7 +168,7 @@ class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
                             'hydra:writable' => true,
                             'hydra:description' => 'description',
                         ],
-                        2 => [
+                        [
                             '@type' => 'hydra:SupportedProperty',
                             'hydra:property' => [
                                 '@id' => '#dummy/relatedDummy',
@@ -167,14 +185,15 @@ class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
                         ],
                     ],
                     'hydra:supportedOperation' => [
-                        0 => [
+                        [
                             '@type' => ['hydra:Operation', 'schema:FindAction'],
                             'hydra:method' => 'GET',
-                            'hydra:title' => 'Retrieves dummy resource.',
-                            'rdfs:label' => 'Retrieves dummy resource.',
+                            'hydra:title' => 'foobar',
+                            'rdfs:label' => 'foobar',
                             'returns' => '#dummy',
+                            'hydra:foo' => 'bar',
                         ],
-                        1 => [
+                        [
                             '@type' => ['hydra:Operation', 'schema:ReplaceAction'],
                             'expects' => '#dummy',
                             'hydra:method' => 'PUT',
@@ -182,7 +201,7 @@ class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
                             'rdfs:label' => 'Replaces the dummy resource.',
                             'returns' => '#dummy',
                         ],
-                        2 => [
+                        [
                             '@type' => ['hydra:Operation', 'schema:FindAction'],
                             'hydra:method' => 'GET',
                             'hydra:title' => 'Retrieves a relatedDummy resource.',
@@ -191,12 +210,12 @@ class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
                         ],
                     ],
                 ],
-                1 => [
+                [
                     '@id' => '#Entrypoint',
                     '@type' => 'hydra:Class',
                     'hydra:title' => 'The API entrypoint',
                     'hydra:supportedProperty' => [
-                        0 => [
+                        [
                             '@type' => 'hydra:SupportedProperty',
                             'hydra:property' => [
                                 '@id' => '#Entrypoint/dummy',
@@ -204,23 +223,23 @@ class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
                                 'rdfs:label' => 'The collection of dummy resources',
                                 'domain' => '#Entrypoint',
                                 'rdfs:range' => [
-                                    'hydra:Collection',
+                                    ['@id' => 'hydra:Collection'],
                                     [
                                         'owl:equivalentClass' => [
-                                            'owl:onProperty' => 'hydra:member',
-                                            'owl:allValuesFrom' => '#dummy',
+                                            'owl:onProperty' => ['@id' => 'hydra:member'],
+                                            'owl:allValuesFrom' => ['@id' => '#dummy'],
                                         ],
                                     ],
                                 ],
                                 'hydra:supportedOperation' => [
-                                    0 => [
+                                    [
                                         '@type' => ['hydra:Operation', 'schema:FindAction'],
                                         'hydra:method' => 'GET',
                                         'hydra:title' => 'Retrieves the collection of dummy resources.',
                                         'rdfs:label' => 'Retrieves the collection of dummy resources.',
                                         'returns' => 'hydra:Collection',
                                     ],
-                                    1 => [
+                                    [
                                         '@type' => ['hydra:Operation', 'schema:CreateAction'],
                                         'expects' => '#dummy',
                                         'hydra:method' => 'POST',
@@ -228,7 +247,7 @@ class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
                                         'rdfs:label' => 'Creates a dummy resource.',
                                         'returns' => '#dummy',
                                     ],
-                                    2 => [
+                                    [
                                         '@type' => ['hydra:Operation', 'schema:FindAction'],
                                         'hydra:method' => 'GET',
                                         'hydra:title' => 'Retrieves a relatedDummy resource.',
@@ -249,12 +268,12 @@ class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
                         'returns' => '#EntryPoint',
                     ],
                 ],
-                2 => [
+                [
                     '@id' => '#ConstraintViolation',
                     '@type' => 'hydra:Class',
                     'hydra:title' => 'A constraint violation',
                     'hydra:supportedProperty' => [
-                        0 => [
+                        [
                             '@type' => 'hydra:SupportedProperty',
                             'hydra:property' => [
                                 '@id' => '#ConstraintViolation/propertyPath',
@@ -268,7 +287,7 @@ class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
                             'hydra:readable' => true,
                             'hydra:writable' => false,
                         ],
-                        1 => [
+                        [
                             '@type' => 'hydra:SupportedProperty',
                             'hydra:property' => [
                                 '@id' => '#ConstraintViolation/message',
@@ -284,13 +303,13 @@ class DocumentationNormalizerTest extends \PHPUnit_Framework_TestCase
                         ],
                     ],
                 ],
-                3 => [
+                [
                     '@id' => '#ConstraintViolationList',
                     '@type' => 'hydra:Class',
                     'subClassOf' => 'hydra:Error',
                     'hydra:title' => 'A constraint violation list',
                     'hydra:supportedProperty' => [
-                        0 => [
+                        [
                             '@type' => 'hydra:SupportedProperty',
                             'hydra:property' => [
                                 '@id' => '#ConstraintViolationList/violations',

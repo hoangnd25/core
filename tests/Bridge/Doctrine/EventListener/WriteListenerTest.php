@@ -17,15 +17,21 @@ use ApiPlatform\Core\Bridge\Doctrine\EventListener\WriteListener;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
 use Doctrine\Common\Persistence\ManagerRegistry;
 use Doctrine\Common\Persistence\ObjectManager;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\GetResponseForControllerResultEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 /**
  * @author Amrouche Hamza <hamza.simperfit@gmail.com>
+ *
+ * @group legacy
  */
-class WriteListenerTest extends \PHPUnit_Framework_TestCase
+class WriteListenerTest extends TestCase
 {
+    /**
+     * @expectedDeprecation The ApiPlatform\Core\Bridge\Doctrine\EventListener\WriteListener class is deprecated since version 2.2 and will be removed in 3.0. Use the ApiPlatform\Core\EventListener\WriteListener class instead.
+     */
     public function testOnKernelViewWithControllerResultAndPostMethod()
     {
         $dummy = new Dummy();
@@ -48,6 +54,9 @@ class WriteListenerTest extends \PHPUnit_Framework_TestCase
         $this->assertNotEquals($dummy, $writeListener->onKernelView($event));
     }
 
+    /**
+     * @expectedDeprecation The ApiPlatform\Core\Bridge\Doctrine\EventListener\WriteListener class is deprecated since version 2.2 and will be removed in 3.0. Use the ApiPlatform\Core\EventListener\WriteListener class instead.
+     */
     public function testOnKernelViewWithControllerResultAndDeleteMethod()
     {
         $dummy = new Dummy();
@@ -71,6 +80,9 @@ class WriteListenerTest extends \PHPUnit_Framework_TestCase
         $this->assertNotEquals($dummy, $writeListener->onKernelView($event->reveal()));
     }
 
+    /**
+     * @expectedDeprecation The ApiPlatform\Core\Bridge\Doctrine\EventListener\WriteListener class is deprecated since version 2.2 and will be removed in 3.0. Use the ApiPlatform\Core\EventListener\WriteListener class instead.
+     */
     public function testOnKernelViewWithSafeMethod()
     {
         $dummy = new Dummy();
@@ -88,6 +100,9 @@ class WriteListenerTest extends \PHPUnit_Framework_TestCase
         $this->assertNotEquals($dummy, $writeListener->onKernelView($event));
     }
 
+    /**
+     * @expectedDeprecation The ApiPlatform\Core\Bridge\Doctrine\EventListener\WriteListener class is deprecated since version 2.2 and will be removed in 3.0. Use the ApiPlatform\Core\EventListener\WriteListener class instead.
+     */
     public function testOnKernelViewWithNoResourceClass()
     {
         $dummy = new Dummy();
@@ -105,6 +120,9 @@ class WriteListenerTest extends \PHPUnit_Framework_TestCase
         $this->assertNotEquals($dummy, $writeListener->onKernelView($event));
     }
 
+    /**
+     * @expectedDeprecation The ApiPlatform\Core\Bridge\Doctrine\EventListener\WriteListener class is deprecated since version 2.2 and will be removed in 3.0. Use the ApiPlatform\Core\EventListener\WriteListener class instead.
+     */
     public function testOnKernelViewWithNoManager()
     {
         $dummy = new Dummy();

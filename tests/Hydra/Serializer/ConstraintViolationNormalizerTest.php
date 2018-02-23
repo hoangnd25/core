@@ -15,19 +15,21 @@ namespace ApiPlatform\Core\Tests\Hydra\Serializer;
 
 use ApiPlatform\Core\Api\UrlGeneratorInterface;
 use ApiPlatform\Core\Hydra\Serializer\ConstraintViolationListNormalizer;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\Validator\Constraints\NotNull;
 use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationList;
 
 /**
  * @author Kévin Dunglas <dunglas@gmail.com>
  */
-class ConstraintViolationNormalizerTest extends \PHPUnit_Framework_TestCase
+class ConstraintViolationNormalizerTest extends TestCase
 {
     public function testSupportNormalization()
     {
         $urlGeneratorProphecy = $this->prophesize(UrlGeneratorInterface::class);
 
-        $normalizer = new ConstraintViolationListNormalizer($urlGeneratorProphecy->reveal());
+        $normalizer = new ConstraintViolationListNormalizer($urlGeneratorProphecy->reveal(), []);
 
         $this->assertTrue($normalizer->supportsNormalization(new ConstraintViolationList(), ConstraintViolationListNormalizer::FORMAT));
         $this->assertFalse($normalizer->supportsNormalization(new ConstraintViolationList(), 'xml'));
@@ -39,10 +41,13 @@ class ConstraintViolationNormalizerTest extends \PHPUnit_Framework_TestCase
         $urlGeneratorProphecy = $this->prophesize(UrlGeneratorInterface::class);
         $urlGeneratorProphecy->generate('api_jsonld_context', ['shortName' => 'ConstraintViolationList'])->willReturn('/context/foo')->shouldBeCalled();
 
-        $normalizer = new ConstraintViolationListNormalizer($urlGeneratorProphecy->reveal());
+        $normalizer = new ConstraintViolationListNormalizer($urlGeneratorProphecy->reveal(), ['severity', 'anotherField1']);
 
+        // Note : we use NotNull constraint and not Constraint class because Constraint is abstract
+        $constraint = new NotNull();
+        $constraint->payload = ['severity' => 'warning', 'anotherField2' => 'aValue'];
         $list = new ConstraintViolationList([
-            new ConstraintViolation('a', 'b', [], 'c', 'd', 'e'),
+            new ConstraintViolation('a', 'b', [], 'c', 'd', 'e', null, null, $constraint),
             new ConstraintViolation('1', '2', [], '3', '4', '5'),
         ]);
 
@@ -56,6 +61,9 @@ class ConstraintViolationNormalizerTest extends \PHPUnit_Framework_TestCase
                     [
                         'propertyPath' => 'd',
                         'message' => 'a',
+                        'payload' => [
+                            'severity' => 'warning',
+                        ],
                     ],
                     [
                         'propertyPath' => '4',

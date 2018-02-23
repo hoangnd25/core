@@ -50,8 +50,11 @@ final class ApiLoader extends Loader
     private $formats;
     private $resourceClassDirectories;
     private $subresourceOperationFactory;
+    private $graphqlEnabled;
+    private $entrypointEnabled;
+    private $docsEnabled;
 
-    public function __construct(KernelInterface $kernel, ResourceNameCollectionFactoryInterface $resourceNameCollectionFactory, ResourceMetadataFactoryInterface $resourceMetadataFactory, OperationPathResolverInterface $operationPathResolver, ContainerInterface $container, array $formats, array $resourceClassDirectories = [], SubresourceOperationFactoryInterface $subresourceOperationFactory = null)
+    public function __construct(KernelInterface $kernel, ResourceNameCollectionFactoryInterface $resourceNameCollectionFactory, ResourceMetadataFactoryInterface $resourceMetadataFactory, OperationPathResolverInterface $operationPathResolver, ContainerInterface $container, array $formats, array $resourceClassDirectories = [], SubresourceOperationFactoryInterface $subresourceOperationFactory = null, bool $graphqlEnabled = false, bool $entrypointEnabled = true, bool $docsEnabled = true)
     {
         $this->fileLoader = new XmlFileLoader(new FileLocator($kernel->locateResource('@ApiPlatformBundle/Resources/config/routing')));
         $this->resourceNameCollectionFactory = $resourceNameCollectionFactory;
@@ -61,6 +64,9 @@ final class ApiLoader extends Loader
         $this->formats = $formats;
         $this->resourceClassDirectories = $resourceClassDirectories;
         $this->subresourceOperationFactory = $subresourceOperationFactory;
+        $this->graphqlEnabled = $graphqlEnabled;
+        $this->entrypointEnabled = $entrypointEnabled;
+        $this->docsEnabled = $docsEnabled;
     }
 
     /**
@@ -113,12 +119,13 @@ final class ApiLoader extends Loader
                             'collection' => $operation['collection'],
                             'operationId' => $operationId,
                         ],
-                    ],
-                    [],
-                    [],
-                    '',
-                    [],
-                    ['GET']
+                    ] + ($operation['defaults'] ?? []),
+                    $operation['requirements'] ?? [],
+                    $operation['options'] ?? [],
+                    $operation['host'] ?? '',
+                    $operation['schemes'] ?? [],
+                    ['GET'],
+                    $operation['condition'] ?? ''
                 ));
             }
         }
@@ -141,7 +148,19 @@ final class ApiLoader extends Loader
      */
     private function loadExternalFiles(RouteCollection $routeCollection)
     {
-        $routeCollection->addCollection($this->fileLoader->load('api.xml'));
+        if ($this->entrypointEnabled) {
+            $routeCollection->addCollection($this->fileLoader->load('api.xml'));
+        }
+
+        if ($this->docsEnabled) {
+            $routeCollection->addCollection($this->fileLoader->load('docs.xml'));
+        }
+
+        if ($this->graphqlEnabled) {
+            $graphqlCollection = $this->fileLoader->load('graphql.xml');
+            $graphqlCollection->addDefaults(['_graphql' => true]);
+            $routeCollection->addCollection($graphqlCollection);
+        }
 
         if (isset($this->formats['jsonld'])) {
             $routeCollection->addCollection($this->fileLoader->load('jsonld.xml'));
@@ -167,7 +186,7 @@ final class ApiLoader extends Loader
         }
 
         if (!isset($operation['method'])) {
-            throw new RuntimeException('Either a "route_name" or a "method" operation attribute must exist.');
+            throw new RuntimeException(sprintf('Either a "route_name" or a "method" operation attribute must exist for the operation "%s" of the resource "%s".', $operationName, $resourceClass));
         }
 
         if (null === $controller = $operation['controller'] ?? null) {
@@ -185,12 +204,13 @@ final class ApiLoader extends Loader
                 '_format' => null,
                 '_api_resource_class' => $resourceClass,
                 sprintf('_api_%s_operation_name', $operationType) => $operationName,
-            ],
-            [],
-            [],
-            '',
-            [],
-            [$operation['method']]
+            ] + ($operation['defaults'] ?? []),
+            $operation['requirements'] ?? [],
+            $operation['options'] ?? [],
+            $operation['host'] ?? '',
+            $operation['schemes'] ?? [],
+            [$operation['method']],
+            $operation['condition'] ?? ''
         );
 
         $routeCollection->add(RouteNameGenerator::generate($operationName, $resourceShortName, $operationType), $route);

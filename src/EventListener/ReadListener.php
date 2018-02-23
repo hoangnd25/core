@@ -18,7 +18,9 @@ use ApiPlatform\Core\DataProvider\ItemDataProviderInterface;
 use ApiPlatform\Core\DataProvider\SubresourceDataProviderInterface;
 use ApiPlatform\Core\Exception\PropertyNotFoundException;
 use ApiPlatform\Core\Exception\RuntimeException;
+use ApiPlatform\Core\Serializer\SerializerContextBuilderInterface;
 use ApiPlatform\Core\Util\RequestAttributesExtractor;
+use ApiPlatform\Core\Util\RequestParser;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -33,12 +35,14 @@ final class ReadListener
     private $collectionDataProvider;
     private $itemDataProvider;
     private $subresourceDataProvider;
+    private $serializerContextBuilder;
 
-    public function __construct(CollectionDataProviderInterface $collectionDataProvider, ItemDataProviderInterface $itemDataProvider, SubresourceDataProviderInterface $subresourceDataProvider = null)
+    public function __construct(CollectionDataProviderInterface $collectionDataProvider, ItemDataProviderInterface $itemDataProvider, SubresourceDataProviderInterface $subresourceDataProvider = null, SerializerContextBuilderInterface $serializerContextBuilder = null)
     {
         $this->collectionDataProvider = $collectionDataProvider;
         $this->itemDataProvider = $itemDataProvider;
         $this->subresourceDataProvider = $subresourceDataProvider;
+        $this->serializerContextBuilder = $serializerContextBuilder;
     }
 
     /**
@@ -58,14 +62,25 @@ final class ReadListener
             return;
         }
 
-        $data = [];
+        if (null === $filters = $request->attributes->get('_api_filters')) {
+            $queryString = RequestParser::getQueryString($request);
+            $filters = $queryString ? RequestParser::parseRequestParams($queryString) : null;
+        }
 
+        $context = null === $filters ? [] : ['filters' => $filters];
+        if ($this->serializerContextBuilder) {
+            // Builtin data providers are able to use the serialization context to automatically add join clauses
+            $context['normalization_context'] = $this->serializerContextBuilder->createFromRequest($request, true, $attributes);
+            $request->attributes->set('_api_normalization_context', $context['normalization_context']);
+        }
+
+        $data = [];
         if (isset($attributes['item_operation_name'])) {
-            $data = $this->getItemData($request, $attributes);
+            $data = $this->getItemData($request, $attributes, $context);
         } elseif (isset($attributes['collection_operation_name'])) {
-            $data = $this->getCollectionData($request, $attributes);
+            $data = $this->getCollectionData($request, $attributes, $context);
         } elseif (isset($attributes['subresource_operation_name'])) {
-            $data = $this->getSubresourceData($request, $attributes);
+            $data = $this->getSubresourceData($request, $attributes, $context);
         }
 
         $request->attributes->set('data', $data);
@@ -74,36 +89,29 @@ final class ReadListener
     /**
      * Retrieves data for a collection operation.
      *
-     * @param Request $request
-     * @param array   $attributes
-     *
      * @return array|\Traversable|null
      */
-    private function getCollectionData(Request $request, array $attributes)
+    private function getCollectionData(Request $request, array $attributes, array $context)
     {
         if ($request->isMethod(Request::METHOD_POST)) {
             return null;
         }
 
-        return $this->collectionDataProvider->getCollection($attributes['resource_class'], $attributes['collection_operation_name']);
+        return $this->collectionDataProvider->getCollection($attributes['resource_class'], $attributes['collection_operation_name'], $context);
     }
 
     /**
      * Gets data for an item operation.
      *
-     * @param Request $request
-     * @param array   $attributes
-     *
      * @throws NotFoundHttpException
      *
      * @return object|null
      */
-    private function getItemData(Request $request, array $attributes)
+    private function getItemData(Request $request, array $attributes, array $context)
     {
         $id = $request->attributes->get('id');
-
         try {
-            $data = $this->itemDataProvider->getItem($attributes['resource_class'], $id, $attributes['item_operation_name']);
+            $data = $this->itemDataProvider->getItem($attributes['resource_class'], $id, $attributes['item_operation_name'], $context);
         } catch (PropertyNotFoundException $e) {
             $data = null;
         }
@@ -118,20 +126,18 @@ final class ReadListener
     /**
      * Gets data for a nested operation.
      *
-     * @param Request $request
-     * @param array   $attributes
-     *
      * @throws NotFoundHttpException
      * @throws RuntimeException
      *
      * @return object|null
      */
-    private function getSubresourceData(Request $request, array $attributes)
+    private function getSubresourceData(Request $request, array $attributes, array $context)
     {
         if (null === $this->subresourceDataProvider) {
             throw new RuntimeException('No subresource data provider.');
         }
 
+        $attributes['subresource_context'] += $context;
         $identifiers = [];
         foreach ($attributes['subresource_context']['identifiers'] as $key => list($id, , $hasIdentifier)) {
             if (true === $hasIdentifier) {

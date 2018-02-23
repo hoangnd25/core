@@ -17,13 +17,14 @@ use ApiPlatform\Core\DataProvider\CollectionDataProviderInterface;
 use ApiPlatform\Core\DataProvider\ItemDataProviderInterface;
 use ApiPlatform\Core\DataProvider\SubresourceDataProviderInterface;
 use ApiPlatform\Core\EventListener\ReadListener;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 
 /**
  * @author Kévin Dunglas <dunglas@gmail.com>
  */
-class ReadListenerTest extends \PHPUnit_Framework_TestCase
+class ReadListenerTest extends TestCase
 {
     public function testNotAnApiPlatformRequest()
     {
@@ -91,7 +92,7 @@ class ReadListenerTest extends \PHPUnit_Framework_TestCase
     public function testRetrieveCollectionGet()
     {
         $collectionDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
-        $collectionDataProvider->getCollection('Foo', 'get')->willReturn([])->shouldBeCalled();
+        $collectionDataProvider->getCollection('Foo', 'get', ['filters' => ['foo' => 'bar']])->willReturn([])->shouldBeCalled();
 
         $itemDataProvider = $this->prophesize(ItemDataProviderInterface::class);
         $itemDataProvider->getItem()->shouldNotBeCalled();
@@ -99,7 +100,7 @@ class ReadListenerTest extends \PHPUnit_Framework_TestCase
         $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
         $subresourceDataProvider->getSubresource()->shouldNotBeCalled();
 
-        $request = new Request([], [], ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'get', '_api_format' => 'json', '_api_mime_type' => 'application/json']);
+        $request = new Request([], [], ['_api_resource_class' => 'Foo', '_api_collection_operation_name' => 'get', '_api_format' => 'json', '_api_mime_type' => 'application/json'], [], [], ['QUERY_STRING' => 'foo=bar']);
         $request->setMethod(Request::METHOD_GET);
 
         $event = $this->prophesize(GetResponseEvent::class);
@@ -118,7 +119,7 @@ class ReadListenerTest extends \PHPUnit_Framework_TestCase
 
         $data = new \stdClass();
         $itemDataProvider = $this->prophesize(ItemDataProviderInterface::class);
-        $itemDataProvider->getItem('Foo', 1, 'get')->willReturn($data)->shouldBeCalled();
+        $itemDataProvider->getItem('Foo', 1, 'get', [])->willReturn($data)->shouldBeCalled();
 
         $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
         $subresourceDataProvider->getSubresource()->shouldNotBeCalled();
@@ -167,7 +168,7 @@ class ReadListenerTest extends \PHPUnit_Framework_TestCase
         $collectionDataProvider = $this->prophesize(CollectionDataProviderInterface::class);
 
         $itemDataProvider = $this->prophesize(ItemDataProviderInterface::class);
-        $itemDataProvider->getItem('Foo', 22, 'get')->willReturn(null)->shouldBeCalled();
+        $itemDataProvider->getItem('Foo', 22, 'get', [])->willReturn(null)->shouldBeCalled();
 
         $subresourceDataProvider = $this->prophesize(SubresourceDataProviderInterface::class);
 

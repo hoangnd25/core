@@ -45,7 +45,8 @@ Feature: Create-Retrieve-Update-Delete
       "name_converted": null,
       "id": 1,
       "name": "My Dummy",
-      "alias": null
+      "alias": null,
+      "foo": null
     }
     """
 
@@ -77,7 +78,8 @@ Feature: Create-Retrieve-Update-Delete
       "name_converted": null,
       "id": 1,
       "name": "My Dummy",
-      "alias": null
+      "alias": null,
+      "foo": null
     }
     """
 
@@ -117,13 +119,14 @@ Feature: Create-Retrieve-Update-Delete
           "name_converted": null,
           "id": 1,
           "name": "My Dummy",
-          "alias": null
+          "alias": null,
+          "foo": null
         }
       ],
       "hydra:totalItems": 1,
       "hydra:search": {
         "@type": "hydra:IriTemplate",
-        "hydra:template": "/dummies{?dummyBoolean,relatedDummy.embeddedDummy.dummyBoolean,dummyDate[before],dummyDate[after],relatedDummy.dummyDate[before],relatedDummy.dummyDate[after],description[exists],relatedDummy.name[exists],dummyBoolean[exists],dummyFloat,dummyPrice,order[id],order[name],order[relatedDummy.name],order[relatedDummy.symfony],dummyFloat[between],dummyFloat[gt],dummyFloat[gte],dummyFloat[lt],dummyFloat[lte],dummyPrice[between],dummyPrice[gt],dummyPrice[gte],dummyPrice[lt],dummyPrice[lte],id,id[],name,alias,description,relatedDummy.name,relatedDummy.name[],relatedDummies,relatedDummies[],dummy,relatedDummies.name}",
+        "hydra:template": "/dummies{?dummyBoolean,relatedDummy.embeddedDummy.dummyBoolean,dummyDate[before],dummyDate[strictly_before],dummyDate[after],dummyDate[strictly_after],relatedDummy.dummyDate[before],relatedDummy.dummyDate[strictly_before],relatedDummy.dummyDate[after],relatedDummy.dummyDate[strictly_after],description[exists],relatedDummy.name[exists],dummyBoolean[exists],dummyFloat,dummyPrice,order[id],order[name],order[description],order[relatedDummy.name],order[relatedDummy.symfony],order[dummyDate],dummyFloat[between],dummyFloat[gt],dummyFloat[gte],dummyFloat[lt],dummyFloat[lte],dummyPrice[between],dummyPrice[gt],dummyPrice[gte],dummyPrice[lt],dummyPrice[lte],id,id[],name,alias,description,relatedDummy.name,relatedDummy.name[],relatedDummies,relatedDummies[],dummy,relatedDummies.name,properties[]}",
         "hydra:variableRepresentation": "BasicRepresentation",
         "hydra:mapping": [
           {
@@ -146,7 +149,19 @@ Feature: Create-Retrieve-Update-Delete
           },
           {
             "@type": "IriTemplateMapping",
+            "variable": "dummyDate[strictly_before]",
+            "property": "dummyDate",
+            "required": false
+          },
+          {
+            "@type": "IriTemplateMapping",
             "variable": "dummyDate[after]",
+            "property": "dummyDate",
+            "required": false
+          },
+          {
+            "@type": "IriTemplateMapping",
+            "variable": "dummyDate[strictly_after]",
             "property": "dummyDate",
             "required": false
           },
@@ -158,7 +173,19 @@ Feature: Create-Retrieve-Update-Delete
           },
           {
             "@type": "IriTemplateMapping",
+            "variable": "relatedDummy.dummyDate[strictly_before]",
+            "property": "relatedDummy.dummyDate",
+            "required": false
+          },
+          {
+            "@type": "IriTemplateMapping",
             "variable": "relatedDummy.dummyDate[after]",
+            "property": "relatedDummy.dummyDate",
+            "required": false
+          },
+          {
+            "@type": "IriTemplateMapping",
+            "variable": "relatedDummy.dummyDate[strictly_after]",
             "property": "relatedDummy.dummyDate",
             "required": false
           },
@@ -206,6 +233,12 @@ Feature: Create-Retrieve-Update-Delete
           },
           {
             "@type": "IriTemplateMapping",
+            "variable": "order[description]",
+            "property": "description",
+            "required": false
+          },
+          {
+            "@type": "IriTemplateMapping",
             "variable": "order[relatedDummy.name]",
             "property": "relatedDummy.name",
             "required": false
@@ -214,6 +247,12 @@ Feature: Create-Retrieve-Update-Delete
             "@type": "IriTemplateMapping",
             "variable": "order[relatedDummy.symfony]",
             "property": "relatedDummy.symfony",
+            "required": false
+          },
+          {
+            "@type": "IriTemplateMapping",
+            "variable": "order[dummyDate]",
+            "property": "dummyDate",
             "required": false
           },
           {
@@ -341,6 +380,12 @@ Feature: Create-Retrieve-Update-Delete
             "variable": "relatedDummies.name",
             "property": "relatedDummies.name",
             "required": false
+          },
+          {
+              "@type": "IriTemplateMapping",
+              "variable": "properties[]",
+              "property": null,
+              "required": false
           }
         ]
       }
@@ -391,7 +436,8 @@ Feature: Create-Retrieve-Update-Delete
       "name_converted": null,
       "id": 1,
       "name": "A nice dummy",
-      "alias": null
+      "alias": null,
+      "foo": null
     }
     """
 
@@ -426,7 +472,8 @@ Feature: Create-Retrieve-Update-Delete
       "name_converted": null,
       "id": 1,
       "name": "A nice dummy",
-      "alias": null
+      "alias": null,
+      "foo": null
     }
     """
 

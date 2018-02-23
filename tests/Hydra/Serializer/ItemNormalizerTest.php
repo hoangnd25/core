@@ -25,6 +25,7 @@ use ApiPlatform\Core\Metadata\Property\PropertyNameCollection;
 use ApiPlatform\Core\Metadata\Resource\Factory\ResourceMetadataFactoryInterface;
 use ApiPlatform\Core\Metadata\Resource\ResourceMetadata;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\Dummy;
+use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -32,7 +33,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 /**
  * @author Kévin Dunglas <dunglas@gmail.com>
  */
-class ItemNormalizerTest extends \PHPUnit_Framework_TestCase
+class ItemNormalizerTest extends TestCase
 {
     public function testDontSupportDenormalization()
     {
@@ -44,12 +45,10 @@ class ItemNormalizerTest extends \PHPUnit_Framework_TestCase
         $contextBuilderProphecy = $this->prophesize(ContextBuilderInterface::class);
         $resourceClassResolverProphecy->getResourceClass(['dummy'], 'Dummy')->willReturn(Dummy::class);
         $propertyNameCollectionFactoryProphecy->create(Dummy::class, [])->willReturn(new PropertyNameCollection(['name' => 'name']));
-        $propertyMetadataFactoryProphecy->create(Dummy::class, 'name', [])->willReturn(new PropertyMetadata())->shouldBeCalled(1);
 
         $normalizer = new ItemNormalizer($resourceMetadataFactoryProphecy->reveal(), $propertyNameCollectionFactoryProphecy->reveal(), $propertyMetadataFactoryProphecy->reveal(), $iriConverterProphecy->reveal(), $resourceClassResolverProphecy->reveal(), $contextBuilderProphecy->reveal());
 
         $this->assertFalse($normalizer->supportsDenormalization('foo', ItemNormalizer::FORMAT));
-        $normalizer->denormalize(['foo'], Dummy::class, 'jsonld', ['jsonld_has_context' => true, 'jsonld_sub_level' => true, 'resource_class' => Dummy::class]);
     }
 
     public function testSupportNormalization()
