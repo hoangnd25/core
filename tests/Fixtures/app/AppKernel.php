@@ -15,6 +15,7 @@ use ApiPlatform\Core\Bridge\Symfony\Bundle\ApiPlatformBundle;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\Entity\User;
 use ApiPlatform\Core\Tests\Fixtures\TestBundle\TestBundle;
 use Doctrine\Bundle\DoctrineBundle\DoctrineBundle;
+use Doctrine\Bundle\MongoDBBundle\DoctrineMongoDBBundle;
 use FOS\UserBundle\FOSUserBundle;
 use Nelmio\ApiDocBundle\NelmioApiDocBundle;
 use Sensio\Bundle\FrameworkExtraBundle\SensioFrameworkExtraBundle;
@@ -53,6 +54,10 @@ class AppKernel extends Kernel
 
         if ($_SERVER['LEGACY'] ?? true) {
             $bundles[] = new NelmioApiDocBundle();
+        }
+
+        if (($appEnv = $_SERVER['APP_ENV'] ?? 'test') && $appEnv === 'mongodb') {
+            $bundles[] = new DoctrineMongoDBBundle();
         }
 
         return $bundles;
